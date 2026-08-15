@@ -5,11 +5,11 @@
   "type": "module",
   "private": true,
   "bin": {
-    "lamb": "./lamb"
+    "lamb": "./bin/lamb"
   },
   "scripts": {
-    "test": "node --test test.js",
-    "check": "node --check core.js && node --check cli.js && node --test test.js"
+    "test": "node --test test/*.test.js",
+    "check": "node --check src/compiler.js && node --check src/cli/index.js && node --test test/*.test.js"
   },
   "engines": {
     "node": ">=20"

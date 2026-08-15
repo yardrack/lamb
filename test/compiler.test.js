@@ -2,12 +2,12 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
-import { LambError, compile, decodeInteger, encodeInteger, parse, samples, tokenize, wordBits } from "./core.js"
+import { LambError, compile, decodeInteger, encodeInteger, parse, samples, tokenize, wordBits } from "../src/compiler.js"
 
 const directory = fileURLToPath(new URL(".", import.meta.url))
 
 function invoke(arguments_, input = "") {
-  return spawnSync(process.execPath, ["lamb", ...arguments_], { cwd: directory, input, encoding: "utf8" })
+  return spawnSync(process.execPath, ["../bin/lamb", ...arguments_], { cwd: directory, input, encoding: "utf8" })
 }
 
 test("tokenizer accepts nested comments and separators", () => {
@@ -63,7 +63,7 @@ test("every bundled specimen completes all stages", () => {
 })
 
 test("cli prints a selected stage from a file", () => {
-  const result = invoke(["sample.ml", "--stage", "lambda", "--no-color"])
+  const result = invoke(["../sample.ml", "--stage", "lambda", "--no-color"])
   assert.equal(result.status, 0)
   assert.doesNotMatch(result.stdout, /^Lamb$/m)
   assert.doesNotMatch(result.stdout, /v1\.0\.0/)

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { run } from "./src/cli/index.js"
+import { run } from "../src/cli/index.js"
 
 process.stdout.on("error", problem => {
   if (problem.code === "EPIPE") process.exit(0)
