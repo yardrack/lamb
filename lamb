@@ -1,0 +1,9 @@
+#!/usr/bin/env node
+import { run } from "./cli.js"
+
+process.stdout.on("error", problem => {
+  if (problem.code === "EPIPE") process.exit(0)
+  throw problem
+})
+
+process.exitCode = await run()
