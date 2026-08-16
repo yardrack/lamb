@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises"
 import { basename } from "node:path"
-import { compile, encodeInteger, LambError, stages, wordBits } from "../compiler.js"
+import { compile, encodeInteger, LambError, representation, stages, tokenize, wordBits } from "../compiler.js"
 
 const version = "1.0.0"
 const names = new Map(stages.map(stage => [stage.key, stage.name]))
@@ -30,6 +30,10 @@ ${style.bold("Usage")}
 ${style.bold("Options")}
   -s, --stage <name>  Print one stage or all stages
   -w, --word <int>    Inspect a tagged machine word
+  -r, --run           Evaluate the program and print its value
+  -a, --analyze       Print structural metrics and diagnostics
+      --repr          Inspect the result's runtime representation
+      --tokens        Print the token stream
   -j, --json          Emit a machine-readable trace
       --no-color      Disable ANSI styling
       --list          List available stages
@@ -41,7 +45,7 @@ ${style.bold("Stages")}
 }
 
 function parseArguments(arguments_) {
-  const options = { stage: "all", file: null, word: null, json: false, color: true, help: false, version: false, list: false }
+  const options = { stage: "all", file: null, word: null, mode: "compile", json: false, color: true, help: false, version: false, list: false }
   for (let index = 0; index < arguments_.length; index += 1) {
     const argument = arguments_[index]
     if (argument === "-h" || argument === "--help") options.help = true
@@ -49,6 +53,10 @@ function parseArguments(arguments_) {
     else if (argument === "-j" || argument === "--json") options.json = true
     else if (argument === "--no-color") options.color = false
     else if (argument === "--list") options.list = true
+    else if (argument === "-r" || argument === "--run") options.mode = "run"
+    else if (argument === "-a" || argument === "--analyze") options.mode = "analyze"
+    else if (argument === "--repr") options.mode = "repr"
+    else if (argument === "--tokens") options.mode = "tokens"
     else if (argument === "-s" || argument === "--stage") {
       index += 1
       if (!arguments_[index]) throw new Error(`${argument} requires a stage name`)
@@ -124,6 +132,43 @@ function printJson(result, input, selected) {
   process.stdout.write(`${JSON.stringify({ input, type: result.type, nodes: result.nodes, stages: shown }, null, 2)}\n`)
 }
 
+function serializable(value) {
+  if (typeof value === "bigint") return value.toString()
+  if (Array.isArray(value)) return value.map(serializable)
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).filter(([key]) => !["type", "environment", "body", "parameter"].includes(key)).map(([key, entry]) => [key, serializable(entry)]))
+  return value
+}
+
+function printMode(result, input, options, style) {
+  if (options.mode === "run") {
+    if (options.json) process.stdout.write(`${JSON.stringify({ input, type: result.type, value: result.result }, null, 2)}\n`)
+    else process.stdout.write(`${style.dim("Type  ")} ${style.cyan(result.type)}\n${style.dim("Value ")} ${style.bold(result.result)}\n`)
+    return
+  }
+  if (options.mode === "analyze") {
+    const report = { input, type: result.type, ...result.analysis }
+    if (options.json) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+    else {
+      process.stdout.write(`${style.dim("Input       ")} ${input}\n${style.dim("Type        ")} ${style.cyan(result.type)}\n`)
+      for (const [name, value] of Object.entries(result.analysis.metrics)) process.stdout.write(`${style.dim(name.padEnd(12))} ${value}\n`)
+      process.stdout.write(`${style.dim("free".padEnd(12))} ${result.analysis.free.join(", ") || "none"}\n`)
+      for (const warning of result.analysis.warnings) process.stdout.write(`${style.yellow(warning.code)} ${warning.message}\n`)
+    }
+    return
+  }
+  if (options.mode === "repr") {
+    const layout = serializable(representation(result.value))
+    if (options.json) process.stdout.write(`${JSON.stringify({ input, value: result.result, layout }, null, 2)}\n`)
+    else {
+      process.stdout.write(`${style.dim("Value     ")} ${result.result}\n${style.dim("Word      ")} ${style.cyan(layout.word)}\n${style.dim("Shape     ")} ${layout.immediate ? "immediate" : "pointer"}\n`)
+      for (const block of layout.blocks) process.stdout.write(`${style.dim(block.address)} ${block.tag} [${block.fields.join(", ")}]\n`)
+    }
+    return
+  }
+  if (options.json) printJson(result, input, options.stage)
+  else printStages(result, input, options.stage, style)
+}
+
 function printError(problem, source, input, style) {
   process.stderr.write(`${style.red(style.bold("error"))}: ${problem.message}\n`)
   if (!(problem instanceof LambError) || !source) return
@@ -181,9 +226,14 @@ export async function run(arguments_ = process.argv.slice(2)) {
       return 2
     }
     if (!source.trim()) throw new Error("input is empty")
+    if (options.mode === "tokens") {
+      const tokens = tokenize(source).filter(token => token.kind !== "eof")
+      if (options.json) process.stdout.write(`${JSON.stringify({ input, tokens }, null, 2)}\n`)
+      else for (const token of tokens) process.stdout.write(`${String(token.start).padStart(5)}  ${token.kind.padEnd(12)} ${JSON.stringify(token.value)}\n`)
+      return 0
+    }
     const result = compile(source)
-    if (options.json) printJson(result, input, options.stage)
-    else printStages(result, input, options.stage, style)
+    printMode(result, input, options, style)
     return 0
   } catch (problem) {
     printError(problem, source, input, style)
