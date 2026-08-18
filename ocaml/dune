@@ -1,0 +1,15 @@
+(library
+ (name lambcore)
+ (wrapped false)
+ (modules syntax token parser typesystem infer value eval analysis lower pipeline))
+
+(executable
+ (name main)
+ (public_name lambnative)
+ (modules main)
+ (libraries lambcore))
+
+(test
+ (name suite)
+ (modules suite)
+ (libraries lambcore))
