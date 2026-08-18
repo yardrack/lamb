@@ -9,7 +9,8 @@
   },
   "scripts": {
     "test": "node --test test/*.test.js",
-    "check": "node --check src/compiler.js && node --check src/cli/index.js && node --test test/*.test.js"
+    "check": "node tool/check.js && node --test test/*.test.js",
+    "specimen": "node tool/specimen.js"
   },
   "engines": {
     "node": ">=20"

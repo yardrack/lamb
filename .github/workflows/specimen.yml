@@ -1,0 +1,25 @@
+name: Specimen
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: specimen-${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  lower:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run specimen
+      - run: node bin/lamb sample.ml --stage assembly --no-color
+      - run: node bin/lamb --word 42 --json
