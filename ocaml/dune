@@ -1,7 +1,7 @@
 (library
  (name lambcore)
  (wrapped false)
- (modules syntax token parser typesystem infer value eval analysis ir optimize lower pipeline))
+ (modules syntax token parser typesystem infer value eval analysis ir optimize machine lower pipeline))
 
 (executable
  (name main)

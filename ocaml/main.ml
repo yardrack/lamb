@@ -4,6 +4,10 @@ type mode =
   | Analyze
   | Represent
   | Tokens
+  | Ir
+  | Optimized
+  | Bytecode
+  | Machine
   | Word
 
 type options = {
@@ -77,6 +81,14 @@ let specification =
     "Inspect the runtime representation";
     "--tokens", Arg.Unit (fun () -> options.mode <- Tokens),
     "Print the token stream";
+    "--ir", Arg.Unit (fun () -> options.mode <- Ir),
+    "Print alpha-renamed Lambda IR";
+    "--optimize", Arg.Unit (fun () -> options.mode <- Optimized),
+    "Print optimized Lambda IR";
+    "--bytecode", Arg.Unit (fun () -> options.mode <- Bytecode),
+    "Print tagged stack bytecode";
+    "--machine", Arg.Unit (fun () -> options.mode <- Machine),
+    "Execute tagged stack bytecode";
     "-w", Arg.String (fun value -> options.mode <- Word; options.integer <- Some value),
     "Inspect a tagged integer";
     "--word", Arg.String (fun value -> options.mode <- Word; options.integer <- Some value),
@@ -290,6 +302,19 @@ let execute () =
           | Run -> print_run result
           | Analyze -> print_analysis result
           | Represent -> print_representation result
+          | Ir -> Printf.printf "%s\n" (Ir.format result.Pipeline.ir)
+          | Optimized ->
+              Printf.printf
+                "%s\n\n%s\n"
+                (Optimize.format_stats result.Pipeline.optimization)
+                (Ir.format result.Pipeline.optimization.Optimize.expression)
+          | Bytecode ->
+              Printf.printf "%s\n" (Machine.disassemble result.Pipeline.bytecode)
+          | Machine ->
+              Printf.printf
+                "Type   %s\nValue  %s\n"
+                (Pipeline.result_type result)
+                (Pipeline.machine_result result)
           | Tokens | Word -> assert false
         end;
         0
@@ -300,6 +325,9 @@ let execute () =
         1
     | Infer.Error (message, location) | Eval.Error (message, location) ->
         report_error input source message location.Syntax.start location.Syntax.finish;
+        1
+    | Machine.Error message ->
+        Printf.eprintf "error: %s\n" message;
         1
 
 let () =

@@ -132,4 +132,27 @@ let () =
   check "tuple pointer" (not layout.Value.immediate);
   equal "tuple block" "tuple" (List.hd layout.Value.blocks).Value.tag;
   equal "six stages" 6 (List.length (compile "42").Pipeline.stages);
+  let arithmeticir = Parser.parse "let value = 20 in value + 22" |> Ir.lower in
+  check "alpha renaming" (String.contains (Ir.format arithmeticir) '/');
+  let folded = Optimize.optimize (Ir.lower (Parser.parse "20 + 22")) in
+  equal "constant folding" 1 folded.Optimize.stats.Optimize.folds;
+  equal "folded machine value" "42" (Machine.run folded.Optimize.expression |> Machine.format_runtime);
+  let beta = Optimize.optimize (Ir.lower (Parser.parse "(fun value -> value + 1) 41")) in
+  equal "beta reduction" 1 beta.Optimize.stats.Optimize.betareductions;
+  equal "beta machine value" "42" (Machine.run beta.Optimize.expression |> Machine.format_runtime);
+  let dead = Optimize.optimize (Ir.lower (Parser.parse "let unused = 21 in 42")) in
+  equal "dead binding elimination" 1 dead.Optimize.stats.Optimize.deadbindings;
+  let machinefactorial = compile "let rec factorial n = if n = 0 then 1 else n * factorial (n - 1) in factorial 6" in
+  equal "recursive bytecode" "720" (Pipeline.machine_result machinefactorial);
+  let machinelength = compile "let rec length values = match values with | [] -> 0 | value :: rest -> 1 + length rest in length [3; 5; 8]" in
+  equal "recursive list bytecode" "3" (Pipeline.machine_result machinelength);
+  let machinelist = compile "match [1; 2] with | [] -> 0 | head :: tail -> head" in
+  equal "pattern bytecode" "1" (Pipeline.machine_result machinelist);
+  let machineoption = compile "match Some 42 with | None -> 0 | Some value -> value" in
+  equal "constructor bytecode" "42" (Pipeline.machine_result machineoption);
+  begin
+    match Machine.verify (Machine.compile folded.Optimize.expression) with
+    | Result.Ok () -> check "bytecode verification" true
+    | Result.Error _ -> check "bytecode verification" false
+  end;
   if !failures > 0 then exit 1

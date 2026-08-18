@@ -12,6 +12,9 @@ type result = {
   syntax : Syntax.expression;
   inference : Infer.result;
   analysis : Analysis.report;
+  ir : Ir.expression;
+  optimization : Optimize.result;
+  bytecode : Machine.instruction list;
   value : Value.value;
   stages : stage list;
 }
@@ -46,6 +49,14 @@ let compile source =
   let syntax = Parser.parse source in
   let inference = Infer.infer syntax in
   let analysis = Analysis.analyze syntax in
+  let ir = Ir.lower syntax in
+  let optimization = Optimize.optimize ir in
+  let bytecode = Machine.compile optimization.Optimize.expression in
+  begin
+    match Machine.verify bytecode with
+    | Result.Ok () -> ()
+    | Result.Error message -> raise (Machine.Error message)
+  end;
   let value = Eval.run syntax in
   let outputs =
     [ "source", String.trim source;
@@ -59,6 +70,9 @@ let compile source =
     syntax;
     inference;
     analysis;
+    ir;
+    optimization;
+    bytecode;
     value;
     stages = List.map (stage outputs) descriptions }
 
@@ -67,6 +81,12 @@ let result_type result =
 
 let result_value result =
   Value.format result.value
+
+let machine_value result =
+  Machine.execute [] [] result.bytecode
+
+let machine_result result =
+  Machine.format_runtime (machine_value result)
 
 let find_stage result name =
   List.find_opt (fun stage -> stage.key = String.lowercase_ascii name) result.stages

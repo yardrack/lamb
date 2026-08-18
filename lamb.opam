@@ -2,7 +2,6 @@ opam-version: "2.0"
 synopsis: "OCaml lowering and tagged runtime observatory"
 maintainer: "yardrack@users.noreply.github.com"
 authors: ["yardrack"]
-license: "MIT"
 homepage: "https://github.com/yardrack/lamb"
 bug-reports: "https://github.com/yardrack/lamb/issues"
 dev-repo: "git+https://github.com/yardrack/lamb.git"
