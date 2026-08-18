@@ -10,7 +10,7 @@
   "scripts": {
     "test": "node --test test/*.test.js",
     "check": "node tool/check.js && node --test test/*.test.js",
-    "specimen": "node tool/specimen.js"
+    "program": "node tool/program.js"
   },
   "engines": {
     "node": ">=20"

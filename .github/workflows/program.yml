@@ -1,4 +1,4 @@
-name: Specimen
+name: Program
 
 on:
   push:
@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: specimen-${{ github.ref }}-${{ github.workflow }}
+  group: program-${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
 
 jobs:
@@ -20,6 +20,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm run specimen
+      - run: npm run program
       - run: node bin/lamb sample.ml --stage assembly --no-color
       - run: node bin/lamb --word 42 --json

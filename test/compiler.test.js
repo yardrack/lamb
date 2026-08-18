@@ -54,7 +54,7 @@ test("tagged integer words always expose an immediate marker", () => {
   for (const value of [-99n, 0n, 99n]) assert.equal(wordBits(encodeInteger(value)).at(-1), "1")
 })
 
-test("every bundled specimen completes all stages", () => {
+test("every bundled program completes all stages", () => {
   for (const sample of samples) {
     const result = compile(sample.source)
     assert.equal(result.stages.length, 6)
