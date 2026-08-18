@@ -1,0 +1,27 @@
+name: Native
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  ocaml:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.2"
+          dune-cache: true
+      - run: opam install dune --yes
+      - run: opam exec -- dune build
+      - run: opam exec -- dune runtest
+      - run: opam exec -- dune exec lambnative -- examples/list.ml --run

@@ -12,7 +12,6 @@ type options = {
   mutable input : string option;
   mutable integer : string option;
   mutable json : bool;
-  mutable color : bool;
   mutable liststages : bool;
 }
 
@@ -22,7 +21,6 @@ let options =
     input = None;
     integer = None;
     json = false;
-    color = true;
     liststages = false }
 
 let escape text =
@@ -85,7 +83,7 @@ let specification =
     "Inspect a tagged integer";
     "-j", Arg.Unit (fun () -> options.json <- true), "Emit JSON";
     "--json", Arg.Unit (fun () -> options.json <- true), "Emit JSON";
-    "--no-color", Arg.Unit (fun () -> options.color <- false), "Disable ANSI color";
+    "--no-color", Arg.Unit (fun () -> ()), "Disable ANSI color";
     "--list", Arg.Unit (fun () -> options.liststages <- true), "List compiler stages" ]
 
 let usage =
@@ -281,8 +279,10 @@ let execute () =
     let input, source = read_input () in
     if String.trim source = "" then raise (Arg.Bad "input is empty");
     try
-      if options.mode = Tokens then print_tokens source
-      else
+      if options.mode = Tokens then begin
+        print_tokens source;
+        0
+      end else begin
         let result = Pipeline.compile source in
         begin
           match options.mode with
@@ -292,7 +292,8 @@ let execute () =
           | Represent -> print_representation result
           | Tokens | Word -> assert false
         end;
-      0
+        0
+      end
     with
     | Token.Error (message, start, finish) ->
         report_error input source message start finish;

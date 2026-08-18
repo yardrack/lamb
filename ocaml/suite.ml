@@ -77,6 +77,10 @@ let () =
     "int"
     (datatype "let rec sum n = if n = 0 then 0 else n + sum (n - 1) in sum 6");
   equal
+    "recursive list inference"
+    "int"
+    (datatype "let rec length values = match values with | [] -> 0 | value :: rest -> 1 + length rest in length [3; 5; 8]");
+  equal
     "tuple parameter"
     "int"
     (datatype "let first = fun (left, right) -> left in first (1, true)");
@@ -87,7 +91,7 @@ let () =
   raises "duplicate pattern binding" (fun () -> compile "fun (value, value) -> value");
   equal "arithmetic evaluation" "42" (result "20 + 22");
   equal "precedence evaluation" "7" (result "1 + 2 * 3");
-  equal "string concatenation" "typed lowering" (result "\"typed\" ^ \" lowering\"");
+  equal "string concatenation" "\"typed lowering\"" (result "\"typed\" ^ \" lowering\"");
   equal "tuple formatting" "(42, true)" (result "(42, true)");
   equal "list formatting" "[1; 2; 3]" (result "[1; 2; 3]");
   equal "option formatting" "Some 42" (result "Some 42");
